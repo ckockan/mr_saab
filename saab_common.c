@@ -1,23 +1,39 @@
-float max3way(float a, float b, float c)
+float max( float x, float y)
 {
-   if ((a>=b)&&(a>=c))
-      return a;
-   if ((b>=a)&&(b>=c))
-      return b;
-   if ((c>=b)&&(c>=a))
-      return c;
+	if( x < y)
+	{
+		return y;
+	}
+	else
+	{
+		return x;
+	}
 }
 
-float max (float a, float b)
+float min( float x, float y)
 {
-   if (a<b)
-      return b;
-   else return a;
+	if( x < y)
+	{
+		return x;
+	}
+	else
+	{
+		return y;
+	}
 }
-float min(float a, float b)
-{
 
-   if (a<b)
-      return a;
-   else return b;
+float max3way( float a, float b, float c)
+{
+	if( ( a >= b) && ( a >= c))
+	{
+		return a;
+	}
+	if( ( b >= a) && ( b >= c))
+	{
+		return b;
+	}
+	if( ( c >= b) && ( c >= a))
+	{
+		return c;
+	}
 }

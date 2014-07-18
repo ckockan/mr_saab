@@ -1,266 +1,292 @@
-typedef struct EdgeEls{
-   int headNode;
-   int tailNode;
-   float score;
-   EdgeEls *next;
-} EdgeEl;
-
-EdgeEls *listEdgeEl;
-
-char *greedyGraphTraversal(float **graph_weights_matrix, int numNodes)
+struct edge
 {
-   char *tempResultSeq;
-   float *alignScore;
-   int overlapCount;
-   float overlapScore;
-   int **edgesPicked;
-   char *resultSeq;
+	int head_node;
+	int tail_node;
+	float score;
+	struct edge* next;
+};
 
-   float minScoreForAdding=15;
-   int nodeChoosen;
-   float maxValue=-1000;
-   float minValueInList=-1000;
-   int startNode;
-   int stopNode;
-   int prevStartNode=stopNode;	
-   int prevStopNode=startNode;
-   bool firstAdded, secondAdded;
-   tempResultSeq=(char *) malloc(OEASeqMaxLen * sizeof(char));
+struct edge* egde_list;
 
-   listEdgeEl=NULL;
+char* greedy_graph_traversal( float** graph_weights_matrix, int num_nodes)
+{
+	int** edges_picked;
+	float* align_score;
+	int overlap_count;
+	float overlap_score;
+	char* temp_result_seq;
+	char* result_seq;
+	float min_score_for_adding = 15;
+	int node_chosen;
+	float max_value = -1000;
+	float min_value_in_list = -1000;
+	int start_node;
+	int stop_node;
+	int prev_start_node = stop_node;	
+	int prev_stop_node = start_node;
+	int first_added;
+	int second_added;
+	int i;
+	int j;
 
-   for (int count=0; count<numNodes; count++)
-   {
-      for (int count2=0; count2<numNodes; count2++)
-      {
-         if (graph_weights_matrix[count][count2]>maxValue && count!=count2)
-         {
-            addNewMaxEl(count, count2);
-            maxValue=graph_weights_matrix[count][count2];
+	temp_result_seq = ( char*) malloc( OEASeqMaxLen * sizeof( char));
+	egde_list = NULL;
 
-         }
-         else if (graph_weights_matrix[count][count2] > maxValue - scoreVariance && count!=count2)
-         {
-            addNewEl(count, count2);
-         }
-      }
-   }
+	for( i = 0; i < num_nodes; i++)
+	{
+		for( j = 0; j < num_nodes; j++)
+		{
+			if( graph_weights_matrix[i][j] > max_value && i != j)
+			{
+				add_max_edge( i, j);
+				max_value = graph_weights_matrix[i][j];
+			}
+			else if( graph_weights_matrix[i][j] > max_value - score_variance && i != j)
+			{
+				add_edge( i, j);
+			}
+		}
+	}
 
-   bestEdgeToPick(&startNode, &stopNode);
+	best_edge_to_pick( &start_node, &stop_node);
+	read[start_node].mark = 1;
+	read[stop_node].mark = 1;	
+	align_score = suffix_prefix_alignments( read[start_node].seq, read[stop_node].seq);
+	overlap_count = -1;
+	overlap_score = -1;
 
-   read[startNode].mark=1;
-   read[stopNode].mark=1;	
-   alignScore=suffixPrefixAlignments(read[startNode].seq, read[stopNode].seq);
-   overlapCount=-1;
-   overlapScore=-1;
-   for (int count=0; count<strlen(read[stopNode].seq); count++)
-   {
-      if (alignScore[count]>overlapScore)
-      {
-         overlapScore=alignScore[count];
-         overlapCount=count;	
-      }
-   }
+	for( i = 0; i < strlen( read[stop_node].seq); i++)
+	{
+		if( align_score[i] > overlap_score)
+		{
+			overlap_score = align_score[i];
+			overlap_count = i;	
+		}
+	}
 
-   free(alignScore);
+	free( align_score);
 
-   prevStartNode=startNode;
-   prevStopNode=stopNode;
+	prev_start_node = start_node;
+	prev_stop_node = stop_node;
+	result_seq = add_seq( read[start_node].seq, read[stop_node].seq, overlap_count);
 
+	free_list();
+	edge_list = NULL;
 
+	do
+	{
+		max_value = -1000;
+		node_chosen = 0;
 
-   resultSeq=addSeq(read[startNode].seq, read[stopNode].seq, overlapCount);
+		for( i = 0; i < num_nodes; i++)
+		{
+			first_added = 0;
+			second_added = 0;
 
-   freeList();
-   listEdgeEl=NULL;
+			if( read[i].mark == 0)
+			{	      
+				if( max_value < graph_weights_matrix[i][prev_start_node])
+				{  
+					max_value = graph_weights_matrix[i][prev_start_node];
+					add_max_edge( i, prev_start_node);
+					first_added = 1;
+				}
 
-   do
-   {
-      maxValue=-1000;
-      nodeChoosen=0;
-      for (int count=0; count<numNodes; count++)
-      {
+				if( max_value < graph_weights_matrix[prev_stop_node][i])
+				{	  
+					max_value = graph_weights_matrix[prev_stop_node][i];
+					add_max_edge( prev_stop_node, i);
+					second_added = 1; 
+				}
 
-         firstAdded=false;
-         secondAdded=false;
-         if (read[count].mark==0)
-         {	      
-            if (maxValue < graph_weights_matrix[count][prevStartNode])
-            {  
-               maxValue=graph_weights_matrix[count][prevStartNode];
-               addNewMaxEl(count, prevStartNode);
-               firstAdded=true;
-            } 
-            if (maxValue < graph_weights_matrix[prevStopNode][count])
-            {	  
-               maxValue=graph_weights_matrix[prevStopNode][count];
-               addNewMaxEl(prevStopNode, count);
-               secondAdded=true; 
-            }
-            if (firstAdded==false && maxValue-scoreVariance < graph_weights_matrix[count][prevStartNode])
-            {
+				if( first_added == 0 && max_value - score_variance < graph_weights_matrix[i][prev_start_node])
+				{
+					add_edge( i, prev_start_node);
+				}
 
-               addNewEl(count, prevStartNode);
-            }
-            if (secondAdded==false &&  maxValue - scoreVariance < graph_weights_matrix[prevStopNode][count])
-            {
+				if( second_added == 0 &&  max_value - score_variance < graph_weights_matrix[prev_stop_node][i])
+				{
+					add_edge( prev_stop_node, i);
+				}
+			}
+		}
 
-               addNewEl(prevStopNode, count);
+		best_edge_to_pick( &start_node, &stop_node);
+		align_score = suffix_prefix_alignments( read[start_node].seq, read[stop_node].seq);
 
-            }
-         }
+		if( max_value > min_score_for_adding)
+		{
+			if( start_node == prev_stop_node)
+			{
+				free( align_score);
+				align_score = suffix_prefix_alignments( read[prev_stop_node].seq, read[stop_node].seq);
+				overlap_count = -1;
+				overlap_score = -100;
+				for( i = 0; i < strlen( read[stop_node].seq) + 1; i++)
+				{
+					if( align_score[i] > overlap_score)
+					{
+						overlap_score = align_score[i];
+						overlap_count = i;
+					}
+				}
 
-      }
-      bestEdgeToPick(&startNode, &stopNode);
+				strcpy( temp_result_seq, result_seq);
+				result_seq = add_seq( result_seq, read[stop_node].seq, overlap_count);
 
-      alignScore=suffixPrefixAlignments(read[startNode].seq, read[stopNode].seq);
-      if (maxValue>minScoreForAdding)
-      {
-         if (startNode==prevStopNode)
-         {
-            free(alignScore);
-            alignScore=suffixPrefixAlignments(read[prevStopNode].seq, read[stopNode].seq);
-            overlapCount=-1;
-            overlapScore=-100;
-            for (int count=0; count<strlen(read[stopNode].seq)+1; count++)
-            {
-               if (alignScore[count]>overlapScore)
-               {
-                  overlapScore=alignScore[count];
-                  overlapCount=count;
-               }
-            }
-            strcpy(tempResultSeq, resultSeq);
-            resultSeq=addSeq(resultSeq, read[stopNode].seq, overlapCount);
+				if( strlen( result_seq) > OEASeqMaxLen)
+				{
+					return temp_result_seq;
+				}
 
-            if (strlen(resultSeq)>OEASeqMaxLen)
-               return tempResultSeq;
-            read[stopNode].mark=1;
-            prevStopNode=stopNode;
-            nodeChoosen=1;
-            free(alignScore);
+				read[stop_node].mark = 1;
+				prev_stop_node = stop_node;
+				node_chosen = 1;
+				free( align_score);
 
-         }else if (stopNode==prevStartNode)
-         {
-            free(alignScore);
-            alignScore=suffixPrefixAlignments(read[startNode].seq, read[prevStartNode].seq);
-            overlapCount=-1;
-            overlapScore=-1;
-            for (int count=0; count<strlen(read[prevStartNode].seq)+1; count++)
-            {
-               if (alignScore[count]>overlapScore)
-               {
-                  overlapScore=alignScore[count];
-                  overlapCount=count;
-               }
-            }
-            strcpy(tempResultSeq, resultSeq);
-            resultSeq=addSeq(read[startNode].seq,resultSeq, overlapCount);                                                       
-            if (strlen(resultSeq)>OEASeqMaxLen)
-               return tempResultSeq;
-            read[startNode].mark=1;
-            prevStartNode=startNode;
-            nodeChoosen=1;
-            free(alignScore);
-         }
-      }else free(alignScore);
-      freeList();
-      listEdgeEl=NULL;
-   }while(maxValue>minScoreForAdding && strlen(resultSeq)<400);
+			}
+			else if( stop_node == prev_start_node)
+			{
+				free( align_score);
+				align_score = suffix_prefix_alignments( read[start_node].seq, read[prev_start_node].seq);
+				overlap_count = -1;
+				overlap_score = -1;
 
-   return(resultSeq);
+				for( i = 0; i < strlen( read[prev_start_node].seq) + 1; i++)
+				{
+					if( align_score[i] > overlap_score)
+					{
+						overlap_score = align_score[i];
+						overlap_count = i;
+					}
+				}
+
+				strcpy( temp_result_seq, result_seq);
+				result_seq = add_seq( read[start_node].seq, result_seq, overlap_count); 
+                                                      
+				if( strlen( result_seq) > OEASeqMaxLen)
+				{
+					return temp_result_seq;
+				}
+
+				read[start_node].mark = 1;
+				prev_start_node = start_node;
+				node_chosen = 1;
+				free( align_score);
+			}
+		}
+		else 
+		{
+			free( align_score);
+		}
+
+		free_list();
+		edge_list = NULL;
+	} while( max_value > min_score_for_adding && strlen( result_seq) < 400);
+
+	return result_seq;
 }
 
-char *addSeq(char *seq1, char *seq2, int overlapCount)
+char* add_seq( char* seq1, char* seq2, int overlap_count)
 {
-   char *resultSeq=(char *) malloc((strlen(seq1)+strlen(seq2)+1-overlapCount)*sizeof(char));
-   for (int count=0; count<strlen(seq1); count++)
-   {
-      resultSeq[count]=seq1[count];
-   }	
-   for (int count=overlapCount; count<strlen(seq2); count++)
-   {
-      resultSeq[count+strlen(seq1)-overlapCount]=seq2[count];
-   }
-   resultSeq[(strlen(seq1)+strlen(seq2)-overlapCount)]='\0';
-   return resultSeq;
+	char* result_seq = ( char*) malloc( ( strlen( seq1) + strlen( seq2) + 1 - overlap_count) * sizeof( char));
+
+	int i;
+	for( i = 0; i < strlen( seq1); i++)
+	{
+		resultSeq[i] = seq1[i];
+	}
+
+	for( i = overlap_count; i < strlen( seq2); i++)
+	{
+		result_seq[i + strlen( seq1) - overlap_count] = seq2[i];
+	}
+
+	result_seq[( strlen( seq1) + strlen( seq2) - overlap_count)] = '\0';
+	return result_seq;
 }		
 
-int addNewEl(int nodeStart, int nodeStop)
+int add_edge( int head, int tail)
 {
-   EdgeEls *newEl;
-   newEl= (EdgeEls *) malloc(sizeof(EdgeEls));
-   newEl->headNode=nodeStart;
-   newEl->tailNode=nodeStop;
-   newEl->score=graph_weights_matrix[nodeStart][nodeStop];
+	struct edge* new_edge;
+	new_edge = ( struct edge*) malloc( sizeof( struct edge));
+	new_edge->head_hode = head;
+	new_edge->tail_node = tail;
+	new_edge->score = graph_weights_matrix[head][tail];
 
-   newEl->next=listEdgeEl;
-   listEdgeEl=newEl;
+	new_edge->next = edge_list;
+	edge_list = new_edge;
 }
 
-int addNewMaxEl(int nodeStart, int nodeStop)
+int add_max_edge( int start, int stop)
 {
-   EdgeEls *ptList;
-   EdgeEls *headList;
-   float maxValue;
-   maxValue=graph_weights_matrix[nodeStart][nodeStop];  
-   if (listEdgeEl!=NULL)
-   {
-      while (listEdgeEl!=NULL && listEdgeEl->score < maxValue-scoreVariance)
-      {
+	struct edge* ptList;
+	struct edge* headList;
+	float max_score;
 
-         ptList=listEdgeEl->next;
-         listEdgeEl=ptList;
-      }
+	max_score = graph_weights_matrix[start][stop];
+  
+	if( edge_list != NULL)
+	{
+		while( edge_list != NULL && edge_list->score < max_score - score_variance)
+		{
+			ptList = edge_list->next;
+			edge_list = ptList;
+		}
 
-      while(listEdgeEl!=NULL && listEdgeEl->next!=NULL)
-      {
-         if (listEdgeEl->next->score < maxValue-scoreVariance)
-         {
-            ptList=listEdgeEl->next;
-            listEdgeEl->next=ptList->next;
-         }
-         else 
-            listEdgeEl=listEdgeEl->next;
-      }
-      addNewEl(nodeStart, nodeStop);
-
-   }
-   else
-   {
-      addNewEl(nodeStart, nodeStop);
-   }
-}
-
-
-int bestEdgeToPick(int *source, int *dest)
-{
-   EdgeEls *ptrEdge;
-   ptrEdge=listEdgeEl;
-   float minValue=1000;
-   int minValueSource=-1;
-   int minValueDest=-1;
-   while(ptrEdge!=NULL)
-   {
-      if (abs(read[ptrEdge->headNode].pos - read[ptrEdge->tailNode].pos)<minValue)
-      {
-         minValue=abs(read[ptrEdge->headNode].pos - read[ptrEdge->tailNode].pos);
-         minValueSource=ptrEdge->headNode;
-         minValueDest=ptrEdge->tailNode;
-      }
-      ptrEdge=ptrEdge->next;
-   }
-   *source=minValueSource;
-   *dest=minValueDest;
+		while( edge_list != NULL && edge_list->next != NULL)
+		{
+			if( edge_list->next->score < max_score - score_variance)
+			{
+				ptList = edge_list->next;
+				edge_list->next = ptList->next;
+			}
+			else
+			{
+				edge_list = edge_list->next;
+			}
+		}
+		add_edge( start, stop);
+	}
+	else
+	{
+		add_edge( start, stop);
+	}
 }
 
 
-void freeList(){
-   EdgeEls *tmp;
-   while (listEdgeEl != NULL){
-      tmp = listEdgeEl->next;
-      free(listEdgeEl);
-      listEdgeEl = tmp;
-   }
-   listEdgeEl=NULL;
+int best_edge_to_pick( int* source, int* dest)
+{
+	struct edge* ptr_edge;
+	float min_value = 1000;
+	int min_value_source = -1;
+	int min_value_dest = -1;
+
+	ptr_edge = edge_list;
+	while( ptr_edge != NULL)
+	{
+		if( abs( read[ptr_edge->head_node].pos - read[ptr_edge->tail_node].pos) < min_value)
+		{
+			min_value = abs( read[ptr_edge->head_node].pos - read[ptr_edge->tail_node].pos);
+			min_value_source = ptr_edge->head_node;
+			min_value_dest = ptr_edge->tail_node;
+		}
+		ptr_edge = ptr_edge->next;
+	}
+
+	*source = min_value_source;
+	*dest = min_value_dest;
+}
+
+
+void free_list()
+{
+	struct edge* temp;
+	while( edge_list != NULL)
+	{
+		temp = edge_list->next;
+		free( edge_list);
+		edge_list = temp;
+	}
+	edge_list = NULL;
 }
